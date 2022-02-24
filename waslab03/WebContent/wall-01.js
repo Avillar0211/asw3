@@ -66,7 +66,10 @@ function getTweets() {
 			/*
 			 * TASK #2 -->
 			 */
-			document.getElementById("tweet_list").innerHTML = tweet_list;
+			tweet_list = JSON.parse(tweet_list);
+			tweet_list.forEach(function(tt) {
+				document.getElementById("tweet_list").innerHTML += getTweetHTML(tt, "like");
+			});
 		}
 	};
 	req.send(null); 
