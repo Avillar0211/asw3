@@ -49,10 +49,17 @@ function deleteHandler(tweetID) {
 
 	 */	
 	req = new XMLHttpRequest();
-	req.open('DELETE', tweetsURI+"/"+tweetID, /*async*/true);
+	
+	var token = localStorage.getItem("token" + tweetID);
+	uri = tweetsURI + "/" + tweetID;
+	
+	req.open('DELETE', uri + "?token=" + token, /*async*/true);
+	
 	req.onload = function() { 
 		if (req.status == 200) { // 200 OK
 			document.getElementById("tweet_"+tweetID).remove();
+			localStorage.removeItem("token" + tweetID);
+			console.log("entra");
 		}
 	};
 	req.send(/*no params*/null);
@@ -76,7 +83,11 @@ function getTweets() {
 			 */
 			tweet_list = JSON.parse(tweet_list);
 			tweet_list.forEach(function(tt) {
-				document.getElementById("tweet_list").innerHTML += getTweetHTML(tt, "like");
+				
+				if(localStorage.getItem("id"+tt.id) != null && tt.id == localStorage.getItem("id"+tt.id)){
+					document.getElementById("tweet_list").innerHTML += getTweetHTML(tt, "delete");
+				}
+				else document.getElementById("tweet_list").innerHTML += getTweetHTML(tt, "like");
 			});
 		}
 	};
@@ -96,6 +107,12 @@ function tweetHandler() {
 		if (req.status == 200) { // 200 OK
 			var nt = JSON.parse(req.responseText);
 			var ht = getTweetHTML(nt, "delete");
+			
+			var t = nt['token'];
+			var id = nt['id'];
+			
+			localStorage.setItem("token" + id, t);
+			localStorage.setItem("id" + id, id);
 
 			document.getElementById("tweet_list").innerHTML = ht + document.getElementById("tweet_list").innerHTML;
 		}

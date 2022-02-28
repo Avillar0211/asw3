@@ -1,6 +1,8 @@
 package wallOfTweets;
 
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -47,9 +49,10 @@ public class WallServlet extends HttpServlet {
 
 		String uri = req.getRequestURI();
 		int lastIndex = uri.lastIndexOf("/likes");
+		long id = 0;
 		if (lastIndex > -1) {  // uri ends with "/likes"
 			// Implements POST http://localhost:8080/waslab03/tweets/:id/likes
-			long id = Long.valueOf(uri.substring(TWEETS_URI.length(),lastIndex));		
+			id = Long.valueOf(uri.substring(TWEETS_URI.length(),lastIndex));		
 			resp.setContentType("text/plain");
 			resp.getWriter().println(Database.likeTweet(id));
 		}
@@ -69,13 +72,16 @@ public class WallServlet extends HttpServlet {
 				String author = aux.getString("author");
 				String text = aux.getString("text");
 				
-				JSONObject aux2 = new JSONObject(Database.insertTweet(author, text));
+				Tweet insertar = Database.insertTweet(author, text);
+				JSONObject aux2 = new JSONObject(insertar);
 				
+				aux2.put("token", convertirMD5(insertar.getId().toString()));
 				resp.getWriter().println(aux2.toString());
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
 		}
 	}
 	
@@ -87,10 +93,37 @@ public class WallServlet extends HttpServlet {
 		
 		long id = Long.valueOf(uri.substring(TWEETS_URI.length()));
 		
-		boolean deleted = Database.deleteTweet(id);
+		String token = req.getQueryString();
+		token = token.substring(6, token.length());
+		
+		String id_MD5 = convertirMD5(String.valueOf(id));
+		
+		boolean deleted = false;
+		
+		if(!token.isEmpty() && token.equals(id_MD5)) {
+			deleted = Database.deleteTweet(id);
+		}
 
 		if (!deleted || uri == null)
 			throw new ServletException("Error");
+	}
+	
+	private String convertirMD5(String contra) {
+		MessageDigest mdigest = null;
+		try {
+			mdigest = MessageDigest.getInstance("MD5");
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		byte[] hash = mdigest.digest(contra.getBytes());
+		StringBuffer s = new StringBuffer();
+		
+		for (byte b: hash) {
+			s.append(Integer.toHexString((b & 0xFF) | 0x100).substring(1,3));		
+		}
+		return s.toString();
 	}
 
 }
